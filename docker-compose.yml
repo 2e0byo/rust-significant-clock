@@ -1,0 +1,12 @@
+services:
+  shell:
+    build: .
+    # user: "1000:1000"
+    volumes:
+      - ./:/home/esp/code
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    privileged: true
+    working_dir: /home/esp/code/significant-clock
+    environment:
+      USER: john
+
