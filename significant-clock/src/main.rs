@@ -1,9 +1,18 @@
+#![feature(array_chunks)]
+use embedded_graphics::{
+    pixelcolor::BinaryColor,
+    prelude::*,
+    primitives::{Circle, PrimitiveStyle},
+};
 use esp_idf_hal::{
     delay::Delay,
     gpio::{OutputPin, PinDriver},
     prelude::*,
 };
-use max7219::{connectors::PinConnector, MAX7219};
+
+use max7219::{connectors::Connector, DataError, DecodeMode, MAX7219};
+mod screen;
+use screen::Screen;
 
 fn main() {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -17,28 +26,19 @@ fn main() {
     let data = PinDriver::output(peripherals.pins.gpio27.downgrade_output()).unwrap();
     let cs = PinDriver::output(peripherals.pins.gpio26.downgrade_output()).unwrap();
     let clk = PinDriver::output(peripherals.pins.gpio25.downgrade_output()).unwrap();
-    let mut display = MAX7219::from_pins(4, data, cs, clk).unwrap();
 
-    let delay = Delay::new_default();
+    let raw_display = MAX7219::from_pins(4, data, cs, clk).unwrap();
+    let mut screen = Screen::from_display(raw_display, 4);
+    screen.begin().unwrap();
 
-    log::info!("Turning on");
-    display.power_on().unwrap();
-    delay.delay_ms(500);
+    let circle = Circle::new(Point::new(12, 4), 5)
+        .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1));
 
-    log::info!("test mode");
-    for i in 0..4 {
-        log::info!("testing {}", i);
-        display.test(i, true).unwrap();
-        delay.delay_ms(500);
-    }
+    circle.draw(&mut screen).unwrap();
 
-    for intensity in 0x0..0xF {
-        log::info!("Intensity: {}", intensity);
-        for i in 0..4 {
-            display.set_intensity(i, intensity).unwrap();
-        }
-        delay.delay_ms(500);
-    }
+    log::info!("flush");
+    // Update the display
+    screen.flush().unwrap();
 
     log::info!("Done");
 }
