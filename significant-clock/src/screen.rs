@@ -2,13 +2,8 @@
 use embedded_graphics::{
     pixelcolor::BinaryColor,
     prelude::*,
-    primitives::{Circle, PrimitiveStyle},
 };
-use esp_idf_hal::{
-    delay::Delay,
-    gpio::{OutputPin, PinDriver},
-    prelude::*,
-};
+
 use max7219::{connectors::Connector, DataError, DecodeMode, MAX7219};
 
 pub struct Screen<T>

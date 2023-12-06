@@ -5,12 +5,11 @@ use embedded_graphics::{
     primitives::{Circle, PrimitiveStyle},
 };
 use esp_idf_hal::{
-    delay::Delay,
     gpio::{OutputPin, PinDriver},
     prelude::*,
 };
 
-use max7219::{connectors::Connector, DataError, DecodeMode, MAX7219};
+use max7219::{MAX7219};
 mod screen;
 use screen::Screen;
 
