@@ -5,13 +5,16 @@ use embedded_graphics::{
 
 use max7219::{connectors::Connector, DataError, DecodeMode, MAX7219};
 
+
 pub struct Screen<T>
 where
     T: Connector,
 {
     display: MAX7219<T>,
     n_displays: usize,
-    framebuffer: [u8; 8 * 4], // TODO static? and maybe bitmask?
+    pub framebuffer: [u8; 8 * 8], // TODO static? and maybe bitmask?
+    cols: u32,
+    rows: u32,
 }
 
 
@@ -42,16 +45,12 @@ where
         Screen {
             display,
             n_displays: digits,
-            framebuffer: [0; 8 * 4],
+            framebuffer: [0; 8 * 8],
+            cols: 8 * 4,
+            rows: 8 * 2,
         }
     }
 
-    fn write_raw(&mut self, data: Vec<DisplayData>) -> Result<(), DataError> {
-        for n in 0..self.n_displays {
-            self.display.write_raw(n, &data[n])?;
-        }
-        Ok(())
-    }
 
     pub fn flush(&mut self) -> Result<(), DataError> {
         for (i, chunk) in self.framebuffer.array_chunks::<8>().enumerate() {
@@ -60,20 +59,27 @@ where
         Ok(())
     }
 
+
+
     pub fn blit(&mut self, x: u32, y: u32, on: bool) {
-        let segment = x / 8;
+        log::info!("({x}, {y})");
+        let col = (x / 8);
         let x = x % 8;
-        let row_index = (segment + y) as usize;
-        let mut row = self.framebuffer[row_index];
-        // let mask = 0x80 >> x;
-        let mask = 1 << x;
+        // let row = 1;
+        let row = (y / 8);
+        let y = y % 8;
+        let segment = col + (row * 4); // cols per row: calculate and store.
+        let posn = (segment * 8 + y) as usize;
+        log::info!("Row {row} Col {col} segment {segment}");
+
+        let mut row = self.framebuffer[posn];
+        let mask = 0b1000_0000 >> x;
         if on {
             row |= mask;
         } else {
-            let mask = 1 << x;
             row &= !mask;
         }
-        self.framebuffer[row_index] = row;
+        self.framebuffer[posn] = row;
     }
 }
 
@@ -89,8 +95,14 @@ where
         I: IntoIterator<Item = Pixel<BinaryColor>>,
     {
         for Pixel(coord, color) in pixels.into_iter() {
-            if let Ok((x @ 0..=32, y @ 0..=8)) = coord.try_into() {
-                self.blit(x, y, color.is_on());
+            // if let Ok((x @ 0..=self.cols, y @ 0..=self.rows)) = coord.try_into() {
+            if let Ok((x, y)) = coord.try_into() {
+                if x < self.cols && y < self.rows {
+                    self.blit(x, y, color.is_on());
+                }
+                // if (0 <= x < self.cols) & (0 <= y < self.rows) {
+                //     self.blit(x, y, color.is_on());
+                // }
             }
         }
 
@@ -103,6 +115,6 @@ where
     T: Connector,
 {
     fn size(&self) -> Size {
-        Size::new(32, 8)
+        Size::new(self.cols, self.rows)
     }
 }
