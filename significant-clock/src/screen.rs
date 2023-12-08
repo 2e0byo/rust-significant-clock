@@ -1,4 +1,3 @@
-#![feature(array_chunks)]
 use embedded_graphics::{
     pixelcolor::BinaryColor,
     prelude::*,
@@ -15,12 +14,12 @@ where
     framebuffer: [u8; 8 * 4], // TODO static? and maybe bitmask?
 }
 
-type DisplayData = [u8; 8];
 
 impl<T> Screen<T>
 where
     T: Connector,
 {
+
     pub fn set_brightness(&mut self, brightness: u8) -> Result<(), DataError> {
         for n in 0..self.n_displays {
             self.display.set_intensity(n, brightness)?;
