@@ -101,7 +101,7 @@ where
                     .enumerate()
                     .filter_map(move |(row, (new, old))| match new == old {
                         true => None,
-                        false => Some((display, row, new)),
+                        false => Some((display, row + 1, new)),
                     })
             })
             .flatten();
