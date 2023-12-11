@@ -25,10 +25,15 @@ embassy = ["esp-idf-svc/embassy-sync", "esp-idf-svc/critical-section", "esp-idf-
 
 [dependencies]
 log = { version = "0.4", default-features = false }
-esp-idf-svc = { version = "0.47.3", default-features = false }
+esp-idf-svc = { version = "0.47.3" }
 max7219 = "0.4.0"
 esp-idf-hal = "0.42.5"
 embedded-graphics = "0.8.1"
+u8g2-fonts = "0.4.0"
+embedded-time = "0.12.1"
+chrono = "0.4.31"
+anyhow = "1.0.75"
+embedded-svc = "0.26.4"
 
 [build-dependencies]
 embuild = "0.31.3"
