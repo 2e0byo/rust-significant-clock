@@ -1,56 +1,98 @@
-use embedded_graphics::{
-    pixelcolor::BinaryColor,
-    prelude::*,
-};
+use std::iter;
+use std::num::TryFromIntError;
+
+use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
 
 use max7219::{connectors::Connector, DataError, DecodeMode, MAX7219};
 
-
-pub struct Screen<T>
-where
-    T: Connector,
-{
-    display: MAX7219<T>,
-    n_displays: usize,
-    pub framebuffer: [u8; 8 * 8], // TODO static? and maybe bitmask?
-    cols: u32,
-    rows: u32,
+#[derive(Debug)]
+pub struct Segment {
+    pub invert_x: bool,
+    pub invert_y: bool,
+    pub physical_posn: u8,
 }
 
+impl Segment {
+    pub fn inverted(physical_posn: u8) -> Segment {
+        Segment {
+            invert_x: true,
+            invert_y: true,
+            physical_posn,
+        }
+    }
+    pub fn normal(physical_posn: u8) -> Segment {
+        Segment {
+            invert_x: false,
+            invert_y: false,
+            physical_posn,
+        }
+    }
+}
 
-impl<T> Screen<T>
+#[derive(Debug)]
+pub struct ScreenConfig {
+    pub n_displays: usize,
+    pub cols: u32,
+    pub rows: u32,
+    pub segments: Vec<Segment>,
+    pub row_length: usize,
+}
+
+#[derive(Debug)]
+pub struct ScreenBuilder {
+    config: ScreenConfig,
+    framebuffer: Vec<u8>,
+}
+
+pub struct Screen<'a, T>
 where
     T: Connector,
 {
+    config: ScreenConfig,
+    framebuffer: Vec<u8>,
+    last_framebuffer: Vec<u8>,
+    display: &'a mut MAX7219<T>,
+}
 
+impl ScreenBuilder {
+    pub fn new(config: ScreenConfig) -> ScreenBuilder {
+        let len = config.n_displays;
+        ScreenBuilder {
+            config,
+            framebuffer: iter::repeat(0).take(len * 8).collect(),
+        }
+    }
+
+    pub fn to_screen<T>(self, display: &mut MAX7219<T>) -> Result<Screen<T>, DataError>
+    where
+        T: Connector,
+    {
+        display.power_on()?;
+        for n in 0..self.config.n_displays {
+            display.set_decode_mode(n, DecodeMode::NoDecode)?;
+            display.clear_display(n)?;
+            display.set_intensity(n, 0x04)?;
+        }
+        let last_framebuffer = self.framebuffer.clone();
+        Ok(Screen {
+            config: self.config,
+            framebuffer: self.framebuffer,
+            last_framebuffer: last_framebuffer,
+            display,
+        })
+    }
+}
+
+impl<T> Screen<'_, T>
+where
+    T: Connector,
+{
     pub fn set_brightness(&mut self, brightness: u8) -> Result<(), DataError> {
-        for n in 0..self.n_displays {
+        for n in 0..self.config.n_displays {
             self.display.set_intensity(n, brightness)?;
         }
         Ok(())
     }
-
-    // TODO make self an enum and walk the state machine here.
-    pub fn begin(&mut self) -> Result<(), DataError> {
-        self.display.power_on()?;
-        for n in 0..self.n_displays {
-            self.display.set_decode_mode(n, DecodeMode::NoDecode)?;
-            self.display.clear_display(n)?;
-            self.display.set_intensity(n, 0x04)?;
-        }
-        Ok(())
-    }
-
-    pub fn from_display(display: MAX7219<T>, digits: usize) -> Screen<T> {
-        Screen {
-            display,
-            n_displays: digits,
-            framebuffer: [0; 8 * 8],
-            cols: 8 * 4,
-            rows: 8 * 2,
-        }
-    }
-
 
     pub fn flush(&mut self) -> Result<(), DataError> {
         let updates = iter::zip(self.framebuffer.chunks(8), self.last_framebuffer.chunks(8))
@@ -73,31 +115,35 @@ where
         Ok(())
     }
 
-
-
     pub fn blit(&mut self, x: u32, y: u32, on: bool) {
-        log::info!("({x}, {y})");
-        let col = (x / 8);
+        let col = x as usize / 8;
         let x = x % 8;
-        // let row = 1;
-        let row = (y / 8);
+        let row = y as usize / 8;
         let y = y % 8;
-        let segment = col + (row * 4); // cols per row: calculate and store.
-        let posn = (segment * 8 + y) as usize;
-        log::info!("Row {row} Col {col} segment {segment}");
+        let segment_no = col + (row * self.config.row_length);
 
-        let mut row = self.framebuffer[posn];
+        let segment = &self.config.segments[segment_no];
+        let x = if segment.invert_x { 7 - x } else { x };
+        let y = if segment.invert_y { 7 - y } else { y };
+
+        let row_index = (segment.physical_posn * 8) as usize + y as usize;
+
+        let mut row = self.framebuffer[row_index];
         let mask = 0b1000_0000 >> x;
         if on {
             row |= mask;
         } else {
             row &= !mask;
         }
-        self.framebuffer[posn] = row;
+        self.framebuffer[row_index] = row;
+    }
+
+    pub fn clear(&mut self) {
+        self.framebuffer = iter::repeat(0).take(self.framebuffer.len()).collect();
     }
 }
 
-impl<T> DrawTarget for Screen<T>
+impl<T> DrawTarget for Screen<'_, T>
 where
     T: Connector,
 {
@@ -109,14 +155,10 @@ where
         I: IntoIterator<Item = Pixel<BinaryColor>>,
     {
         for Pixel(coord, color) in pixels.into_iter() {
-            // if let Ok((x @ 0..=self.cols, y @ 0..=self.rows)) = coord.try_into() {
             if let Ok((x, y)) = coord.try_into() {
-                if x < self.cols && y < self.rows {
+                if x < self.config.cols && y < self.config.rows {
                     self.blit(x, y, color.is_on());
                 }
-                // if (0 <= x < self.cols) & (0 <= y < self.rows) {
-                //     self.blit(x, y, color.is_on());
-                // }
             }
         }
 
@@ -124,11 +166,11 @@ where
     }
 }
 
-impl<T> OriginDimensions for Screen<T>
+impl<T> OriginDimensions for Screen<'_, T>
 where
     T: Connector,
 {
     fn size(&self) -> Size {
-        Size::new(self.cols, self.rows)
+        Size::new(self.config.cols, self.config.rows)
     }
 }
