@@ -53,9 +53,23 @@ where
 
 
     pub fn flush(&mut self) -> Result<(), DataError> {
-        for (i, chunk) in self.framebuffer.array_chunks::<8>().enumerate() {
-            self.display.write_raw(i, chunk)?;
+        let updates = iter::zip(self.framebuffer.chunks(8), self.last_framebuffer.chunks(8))
+            .enumerate()
+            .map(|(display, (new, old))| {
+                iter::zip(new, old)
+                    .enumerate()
+                    .filter_map(move |(row, (new, old))| match new == old {
+                        true => None,
+                        false => Some((display, row, new)),
+                    })
+            })
+            .flatten();
+
+        for (display, row, new) in updates {
+            self.display.write_raw_byte(display, row as u8, *new)?;
         }
+
+        self.last_framebuffer = self.framebuffer.clone();
         Ok(())
     }
 
