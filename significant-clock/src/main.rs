@@ -78,25 +78,6 @@ fn main() {
     //     Err(e) => log::error!("{:?}", e),
     // }
 
-    let delay = Delay::new_default();
-
-    loop {
-        for x in 0..32 {
-            for y in 0..16 {
-                screen.clear();
-                screen.blit(x, y, true);
-                match screen.flush() {
-                    Ok(_) => (),
-                    Err(e) => log::info!("{e:?}"),
-                }
-                delay.delay_us(1);
-            }
-        }
-    }
-
-    // log::info!("flush");
-    // // Update the display
-    // // screen.flush().unwrap();
 
     log::info!("Done");
 }

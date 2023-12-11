@@ -1,5 +1,4 @@
 use std::iter;
-use std::num::TryFromIntError;
 
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
 
@@ -77,7 +76,7 @@ impl ScreenBuilder {
         Ok(Screen {
             config: self.config,
             framebuffer: self.framebuffer,
-            last_framebuffer: last_framebuffer,
+            last_framebuffer,
             display,
         })
     }
