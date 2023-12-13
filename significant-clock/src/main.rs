@@ -1,13 +1,8 @@
 use chrono::{DateTime, Utc};
+
 use embedded_graphics::{
-    mono_font::{
-        ascii::{FONT_4X6, FONT_5X7},
-        MonoTextStyle,
-    },
     pixelcolor::BinaryColor,
     prelude::*,
-    primitives::{Circle, PrimitiveStyle},
-    text::Text,
 };
 use esp_idf_hal::{
     delay::Delay,
@@ -20,6 +15,7 @@ use esp_idf_svc::{
     sntp::{EspSntp, SyncStatus},
     wifi::{ClientConfiguration, EspWifi},
 };
+
 use screen::Screen;
 use std::time::SystemTime;
 use u8g2_fonts::{
@@ -44,7 +40,7 @@ where
     let s = dt.format("%S");
 
     let large_font = FontRenderer::new::<fonts::u8g2_font_5x7_tf>();
-    let small_font = FontRenderer::new::<fonts::u8g2_font_squeezed_r7_tr>();
+    // let small_font = FontRenderer::new::<fonts::u8g2_font_squeezed_r7_tr>();
     let tiny_font = FontRenderer::new::<fonts::u8g2_font_u8glib_4_tf>();
     large_font
         .render_aligned(
@@ -59,7 +55,7 @@ where
     tiny_font
         .render_aligned(
             format_args!("{}", s),
-            screen.bounding_box().bottom_right().unwrap() + Point::new(1, 1),
+            screen.bounding_box().bottom_right().unwrap() + Point::new(1, 2),
             VerticalPosition::Bottom,
             HorizontalAlignment::Right,
             FontColor::Transparent(BinaryColor::On),
@@ -146,12 +142,10 @@ fn main() {
     //     .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
     //     .draw(&mut screen).unwrap();
 
+    screen.set_brightness(1);
     loop {
-        for brightness in 0..0xf {
-            show_time(&mut screen);
-            screen.set_brightness(brightness).unwrap();
-            delay.delay_ms(1_000);
-        }
+        show_time(&mut screen);
+        delay.delay_ms(1_000);
     }
 
     log::info!("Done");
