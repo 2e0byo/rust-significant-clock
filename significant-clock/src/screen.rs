@@ -43,14 +43,14 @@ pub struct ScreenBuilder {
     framebuffer: Vec<u8>,
 }
 
-pub struct Screen<'a, T>
+pub struct Screen<T>
 where
     T: Connector,
 {
     config: ScreenConfig,
     framebuffer: Vec<u8>,
     last_framebuffer: Vec<u8>,
-    display: &'a mut MAX7219<T>,
+    display: MAX7219<T>,
 }
 
 impl ScreenBuilder {
@@ -62,27 +62,28 @@ impl ScreenBuilder {
         }
     }
 
-    pub fn to_screen<T>(self, display: &mut MAX7219<T>) -> Result<Screen<T>, DataError>
+    pub fn to_screen<T>(self, display: MAX7219<T>) -> Result<Screen<T>, DataError>
     where
         T: Connector,
     {
-        display.power_on()?;
-        for n in 0..self.config.n_displays {
-            display.set_decode_mode(n, DecodeMode::NoDecode)?;
-            display.clear_display(n)?;
-            display.set_intensity(n, 0x04)?;
-        }
         let last_framebuffer = self.framebuffer.clone();
-        Ok(Screen {
+        let mut screen = Screen {
             config: self.config,
             framebuffer: self.framebuffer,
             last_framebuffer,
             display,
-        })
+        };
+        screen.display.power_on()?;
+        for n in 0..screen.config.n_displays {
+           screen.display.set_decode_mode(n, DecodeMode::NoDecode)?;
+           screen.display.clear_display(n)?;
+           screen.display.set_intensity(n, 0x04)?;
+        }
+        Ok(screen)
     }
 }
 
-impl<T> Screen<'_, T>
+impl<T> Screen<T>
 where
     T: Connector,
 {
@@ -142,7 +143,7 @@ where
     }
 }
 
-impl<T> DrawTarget for Screen<'_, T>
+impl<T> DrawTarget for Screen<T>
 where
     T: Connector,
 {
@@ -165,7 +166,7 @@ where
     }
 }
 
-impl<T> OriginDimensions for Screen<'_, T>
+impl<T> OriginDimensions for Screen<T>
 where
     T: Connector,
 {
