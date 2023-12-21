@@ -101,8 +101,8 @@ fn main() -> Result<!> {
     let wifi_builder = WifiBuilder::from_modem(peripherals.modem)?;
 
     let client_config = ClientConfiguration {
-        ssid: "***REMOVED***".into(),
-        password: "***REMOVED***".into(),
+        ssid: "SSID".into();
+        password: "PASSW0D".into();
         auth_method: esp_idf_svc::wifi::AuthMethod::None, // personal?
         ..Default::default()
     };
