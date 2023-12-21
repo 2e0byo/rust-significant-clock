@@ -24,6 +24,7 @@ use crate::wifi::*;
 use crate::{
     clock::screen_loop,
     screen::{ScreenBuilder, ScreenConfig, Segment},
+    secrets,
 };
 
 use std::thread;
@@ -69,7 +70,6 @@ fn main() -> Result<!> {
     // left = 34;
     // rigth button = 35//
 
-
     let segments = vec![
         Segment::inverted(7),
         Segment::inverted(6),
@@ -101,8 +101,8 @@ fn main() -> Result<!> {
     let wifi_builder = WifiBuilder::from_modem(peripherals.modem)?;
 
     let client_config = ClientConfiguration {
-        ssid: "SSID".into();
-        password: "PASSW0D".into();
+        ssid: secrets::SSID,
+        password: secrets::PASSWORD,
         auth_method: esp_idf_svc::wifi::AuthMethod::None, // personal?
         ..Default::default()
     };
