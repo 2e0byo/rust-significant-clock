@@ -79,7 +79,7 @@ impl ScreenBuilder {
         for n in 0..screen.config.n_displays {
             screen.display.set_decode_mode(n, DecodeMode::NoDecode)?;
             screen.display.clear_display(n)?;
-            screen.display.set_intensity(n, 0x04)?;
+            screen.display.set_intensity(n, 0)?;
         }
         Ok(screen)
     }
