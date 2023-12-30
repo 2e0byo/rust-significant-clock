@@ -1,48 +1,90 @@
+use std::{path::Path, fs::{self, File}};
+
+use anyhow::Result;
 use rgb::RGB8;
+use crate::leds::Pixel;
+use serde::{Serialize, Deserialize};
+
+
+trait Persist<'a>
+where
+    Self: Default,
+    Self: Serialize,
+for<'de> Self: Deserialize<'de>,
+{
+    fn load(path: &Path) -> Self {
+        File::open(path)
+            .and_then(|reader| Ok(serde_json::from_reader(reader)?))
+            .unwrap_or_default()
+    }
+
+    fn save(&self, path: &Path) -> Result<()> {
+        let serialised = serde_json::to_string(&self)?;
+        fs::write(path, serialised)?;
+        Ok(())
+    }
+}
+
+impl Persist<'_> for Config {}
 
 /// Global clock config.  This is persisted to disk when modified, and can be set over the api.
-
-#[derive(Clone, Debug)]
-struct Config {
-    light: RGB8,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Config {
+    pub lamp_brightness: Pixel,
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
-            light: RGB8 {
+            lamp_brightness: RGB8 {
                 r: 25,
                 g: 25,
                 b: 25,
-            },
+            }.into(),
         }
     }
 }
 
-struct ConfigHandler {
-    config: Config
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct State {
+    lamp_on: bool,
+    alarm_on: bool,
 }
 
-impl ConfigHandler {
-    fn load() -> Config {
-        log::info!("Loading config");
-        Default::default()
-    }
-    pub fn new() -> Self {
-        let config= ConfigHandler::load();
-        Self { config }
-    }
-
-    pub fn get(&self) -> Config {
-        self.config.clone()
-    }
-
-    fn persist(&self) {
-        log::info!("Persisting config: {:?}", self.config);
-    }
-
-    pub fn set(&mut self, config: Config) {
-        self.config = config;
-        self.persist();
+impl Default for State {
+    fn default() -> Self {
+        State {
+            lamp_on: true,
+            alarm_on: false,
+        }
     }
 }
+
+pub struct Handler<T> {
+    current: T,
+    path: Box<Path>,
+}
+
+impl<T> Handler<T>
+    where
+    T: for<'a> Persist<'a>,
+    T: Clone,
+{
+    pub fn new(path: &Path) -> Self {
+        let current: T = Persist::load(path);
+        Self { current, path: path.into()}
+    }
+
+    pub fn get(&self) -> T {
+        self.current.clone()
+    }
+
+    pub fn set(&mut self, val: T) {
+        self.current = val;
+        if let Err(e) = self.current.save(&self.path) {
+            log::warn!("Error persisting: {e:?}");
+        }
+    }
+}
+
+pub type ConfigHandler = Handler<Config>;
