@@ -1,3 +1,4 @@
+use core::fmt;
 use std::iter;
 
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
@@ -44,6 +45,25 @@ pub struct ScreenBuilder {
     framebuffer: Vec<u8>,
 }
 
+#[derive(Debug, Clone)]
+pub struct ScreenError;
+
+impl fmt::Display for ScreenError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Display error")
+    }
+}
+
+impl From<DataError> for ScreenError {
+    /// Cast a DataError enum into a screen error.
+    /// The only information in a DataError is the mode (spi/pin), which isn't worth preserving.
+    fn from(_value: DataError) -> Self {
+        ScreenError
+    }
+}
+
+impl std::error::Error for ScreenError {}
+
 pub struct Screen<T>
 where
     T: Connector,
@@ -65,7 +85,7 @@ impl ScreenBuilder {
         }
     }
 
-    pub fn build<T>(self, display: MAX7219<T>) -> Result<Screen<T>, DataError>
+    pub fn build<T>(self, display: MAX7219<T>) -> Result<Screen<T>, ScreenError>
     where
         T: Connector,
     {
@@ -92,14 +112,14 @@ impl<T> Screen<T>
 where
     T: Connector,
 {
-    pub fn set_brightness(&mut self, brightness: u8) -> Result<(), DataError> {
+    pub fn set_brightness(&mut self, brightness: u8) -> Result<(), ScreenError> {
         for n in 0..self.config.n_displays {
             self.display.set_intensity(n, brightness)?;
         }
         Ok(())
     }
 
-    pub fn flush(&mut self) -> Result<(), DataError> {
+    pub fn flush(&mut self) -> Result<(), ScreenError> {
         let updates = iter::zip(self.framebuffer.chunks(8), self.last_framebuffer.chunks(8))
             .enumerate()
             .flat_map(|(display, (new, old))| {
