@@ -32,6 +32,7 @@ impl Persist<'_> for Config {}
 /// Global clock config.  This is persisted to disk when modified, and can be set over the api.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
+    pub lamp_on: bool,
     pub lamp_brightness: Pixel,
     pub significant_mode: bool,
 }
@@ -39,6 +40,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Config {
         Config {
+            lamp_on: true,
             lamp_brightness: RGB8 {
                 r: 25,
                 g: 25,

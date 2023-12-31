@@ -27,13 +27,24 @@ impl<T: SetDutyCycle> Lamp<T> {
         self.leds.off()
     }
 
+    fn sync(&mut self) -> Result<(), T::Error> {
+        if self.config.lamp_on {
+            self.on()
+        } else {
+            self.off()
+        }
+    }
+
     pub fn run(&mut self, rx: Receiver<Event>) -> ! {
         loop {
             match rx.recv() {
                 Ok(Event::Flash) => {
                     let _ = self.leds.flash();
-                }
-                Ok(Event::ChangeConfig(config)) => self.config = config,
+                },
+                Ok(Event::ChangeConfig(config)) => {
+                    self.config = config;
+                    let _ = self.sync();
+                },
                 _ => (),
             }
         }

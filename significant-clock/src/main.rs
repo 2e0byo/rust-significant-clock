@@ -5,7 +5,7 @@ use crossbeam_channel::bounded;
 
 
 use esp_idf_hal::{
-    gpio::{OutputPin, PinDriver},
+    gpio::{OutputPin, PinDriver, InputPin},
     ledc::{config::TimerConfig, *},
     prelude::*,
 };
@@ -24,10 +24,11 @@ mod pins;
 mod screen;
 mod secrets;
 mod wifi;
+mod buttons;
 
 use crate::{
     clock::screen_loop,
-    screen::{ScreenBuilder, ScreenConfig, Segment},
+    screen::{ScreenBuilder, ScreenConfig, Segment}, buttons::Buttons,
 };
 use crate::{config::ConfigHandler, lamp::Lamp, wifi::*};
 use crate::{event::Event, leds::Leds};
@@ -56,8 +57,6 @@ fn main() -> Result<!> {
 
     let _buzz = PinDriver::output(peripherals.pins.gpio27.downgrade_output())?;
 
-    // left = 34;
-    // rigth button = 35//
 
     let screen = {
         let segments = vec![
@@ -138,15 +137,27 @@ fn main() -> Result<!> {
 
         let rx = msg_rx.clone();
         let tx = msg_tx.clone();
-        let _ = thread::Builder::new()
+        thread::Builder::new()
             .stack_size(4096)
-            .spawn(move || wifi_loop(wifi, rx, tx));
+            .spawn(move || wifi_loop(wifi, rx, tx))
     };
 
     let tx = msg_tx.clone();
     let _sntp = EspSntp::new_with_callback(&SntpConf::default(), move |_| {
         let _ = tx.try_send(Event::ClockSynced);
     });
+
+    let _button_task = {
+        let left_button = PinDriver::input(peripherals.pins.gpio34.downgrade_input())?;
+        let right_button = PinDriver::input(peripherals.pins.gpio35.downgrade_input())?;
+        let mut buttons = Buttons::new(left_button, right_button, config.clone());
+        let tx = msg_tx.clone();
+
+        thread::Builder::new()
+            .stack_size(4096)
+            .spawn(move || buttons.run(tx))
+
+    };
 
     // Send startup messages
     let _ = msg_tx.send(Event::ChangeBrightness(0));
