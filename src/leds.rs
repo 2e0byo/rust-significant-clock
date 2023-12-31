@@ -45,19 +45,16 @@ impl Pixel {
         let r = self.r.checked_add(other.r).unwrap_or(255);
         let g = self.r.checked_add(other.g).unwrap_or(255);
         let b = self.r.checked_add(other.b).unwrap_or(255);
-        RGB8 {r, g, b}.into()
-
+        RGB8 { r, g, b }.into()
     }
 
     pub fn safe_sub(&mut self, other: Self) -> Self {
         let r = self.r.checked_sub(other.r).unwrap_or(0);
         let g = self.r.checked_sub(other.g).unwrap_or(0);
         let b = self.r.checked_sub(other.b).unwrap_or(0);
-        RGB8 {r, g, b}.into()
-
+        RGB8 { r, g, b }.into()
     }
 }
-
 
 pub struct Leds<T: SetDutyCycle> {
     red: T,

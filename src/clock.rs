@@ -7,7 +7,7 @@ use esp_idf_hal::{
     sys::{setenv, tzset},
 };
 
-use std::{ffi::CString};
+use std::ffi::CString;
 
 use max7219::connectors::Connector;
 use u8g2_fonts::{

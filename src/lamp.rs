@@ -40,11 +40,11 @@ impl<T: SetDutyCycle> Lamp<T> {
             match rx.recv() {
                 Ok(Event::Flash) => {
                     let _ = self.leds.flash();
-                },
+                }
                 Ok(Event::ChangeConfig(config)) => {
                     self.config = config;
                     let _ = self.sync();
-                },
+                }
                 _ => (),
             }
         }

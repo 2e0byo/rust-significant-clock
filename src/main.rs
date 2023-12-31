@@ -3,9 +3,8 @@
 use anyhow::{Context, Result};
 use crossbeam_channel::bounded;
 
-
 use esp_idf_hal::{
-    gpio::{OutputPin, PinDriver, InputPin},
+    gpio::{InputPin, OutputPin, PinDriver},
     ledc::{config::TimerConfig, *},
     prelude::*,
 };
@@ -15,6 +14,7 @@ use esp_idf_svc::{
 };
 
 use max7219::MAX7219;
+mod buttons;
 mod clock;
 mod config;
 mod event;
@@ -24,20 +24,16 @@ mod pins;
 mod screen;
 mod secrets;
 mod wifi;
-mod buttons;
 
 use crate::{
+    buttons::Buttons,
     clock::screen_loop,
-    screen::{ScreenBuilder, ScreenConfig, Segment}, buttons::Buttons,
+    screen::{ScreenBuilder, ScreenConfig, Segment},
 };
 use crate::{config::ConfigHandler, lamp::Lamp, wifi::*};
 use crate::{event::Event, leds::Leds};
 
-use std::{
-    path::Path,
-    thread,
-};
-
+use std::{path::Path, thread};
 
 fn main() -> Result<!> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -56,7 +52,6 @@ fn main() -> Result<!> {
     let clk = PinDriver::output(peripherals.pins.gpio25.downgrade_output())?;
 
     let _buzz = PinDriver::output(peripherals.pins.gpio27.downgrade_output())?;
-
 
     let screen = {
         let segments = vec![
@@ -156,7 +151,6 @@ fn main() -> Result<!> {
         thread::Builder::new()
             .stack_size(4096)
             .spawn(move || buttons.run(tx))
-
     };
 
     // Send startup messages

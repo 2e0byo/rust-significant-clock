@@ -1,6 +1,5 @@
 use crate::config::Config;
 
-
 #[derive(Debug)]
 pub enum Event {
     // Network
