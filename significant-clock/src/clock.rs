@@ -1,10 +1,13 @@
 use anyhow::{Context, Result};
-use chrono::{DateTime, Utc};
-use crossbeam_channel::Receiver;
+use chrono::{DateTime, Local, Timelike};
+use crossbeam_channel::{Receiver, Sender};
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
-use esp_idf_hal::delay::Delay;
+use esp_idf_hal::{
+    delay::Delay,
+    sys::{setenv, tzset},
+};
 
-use std::time::SystemTime;
+use std::{ffi::CString};
 
 use max7219::connectors::Connector;
 use u8g2_fonts::{
@@ -13,16 +16,44 @@ use u8g2_fonts::{
     FontRenderer,
 };
 
-use crate::event::Event;
 use crate::screen::Screen;
+use crate::{config::Config, event::Event};
 
-fn show_time<T>(screen: &mut Screen<T>) -> Result<()>
+fn is_significant(time: DateTime<Local>) -> bool {
+    let internal_pattern = |time: DateTime<Local>| {
+        // TODO use an iterator here not vector
+        let numbers: Vec<u8> = time
+            .format("%H%M%S")
+            .to_string()
+            .chars()
+            .map(|c| c.try_into().unwrap())
+            .collect();
+        let diffs: Vec<i8> = numbers
+            .windows(2)
+            .map(|window| window[1] as i8 - window[0] as i8)
+            .collect();
+        diffs[0] == -diffs[4] && diffs[1] == -diffs[3] || diffs == vec![1, 1, 1, 1, 1]
+    };
+
+    time.minute() == time.hour() && time.hour() == time.second() // 12:12:12
+        || internal_pattern(time) // 12:34:56 || 12:33:21
+}
+
+fn flash(tx: &Sender<Event>) {
+    let _ = tx.try_send(Event::Flash);
+}
+
+fn show_time<T>(screen: &mut Screen<T>, significant_mode: bool, tx: &Sender<Event>) -> Result<()>
 where
     T: Connector,
 {
     screen.clear();
-    let now = SystemTime::now();
-    let dt: DateTime<Utc> = now.into();
+
+    let dt = Local::now();
+    if significant_mode && is_significant(dt) {
+        flash(tx);
+    }
+
     let hm = dt.format("%H:%M");
     let s = dt.format("%S");
 
@@ -60,19 +91,33 @@ where
     Ok(())
 }
 
-pub fn screen_loop<T>(mut screen: Screen<T>, rx: Receiver<Event>) -> !
+pub fn screen_loop<T>(
+    mut screen: Screen<T>,
+    rx: Receiver<Event>,
+    tx: Sender<Event>,
+    config: Config,
+) -> !
 where
     T: Connector,
 {
+    // TODO move init somewhere else.
+    unsafe {
+        let tz = CString::new("TZ").unwrap();
+        let zone = CString::new("CET-1CEST,M3.5.0,M10.5.0/3").unwrap();
+        setenv(tz.as_ptr(), zone.as_ptr(), 1);
+        tzset();
+    }
     let delay = Delay::new_default();
+    let mut config = config;
     loop {
-        if let Err(e) = show_time(&mut screen) {
+        if let Err(e) = show_time(&mut screen, config.significant_mode, &tx) {
             log::error!("Show time failed: {e:?}")
         };
         match rx.try_recv() {
             Ok(Event::ChangeBrightness(val)) => {
                 let _ = screen.set_brightness(val);
             }
+            Ok(Event::ChangeConfig(new_config)) => config = new_config,
             _ => (),
         };
         delay.delay_ms(100);

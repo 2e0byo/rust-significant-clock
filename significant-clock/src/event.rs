@@ -1,8 +1,5 @@
-#[derive(Debug)]
-pub enum SignificanceMode {
-    On,
-    Off,
-}
+use crate::config::Config;
+
 
 #[derive(Debug)]
 pub enum Event {
@@ -19,5 +16,7 @@ pub enum Event {
     Hide,
     Show,
     // clock
-    SetSingificanceMode(SignificanceMode)
+    ChangeConfig(Config),
+    // Internal
+    Flash,
 }

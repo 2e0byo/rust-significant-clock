@@ -1,16 +1,18 @@
-use std::{path::Path, fs::{self, File}};
+use std::{
+    fs::{self, File},
+    path::Path,
+};
 
+use crate::leds::Pixel;
 use anyhow::Result;
 use rgb::RGB8;
-use crate::leds::Pixel;
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 trait Persist<'a>
 where
     Self: Default,
     Self: Serialize,
-for<'de> Self: Deserialize<'de>,
+    for<'de> Self: Deserialize<'de>,
 {
     fn load(path: &Path) -> Self {
         File::open(path)
@@ -31,6 +33,7 @@ impl Persist<'_> for Config {}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
     pub lamp_brightness: Pixel,
+    pub significant_mode: bool,
 }
 
 impl Default for Config {
@@ -40,7 +43,9 @@ impl Default for Config {
                 r: 25,
                 g: 25,
                 b: 25,
-            }.into(),
+            }
+            .into(),
+            significant_mode: false,
         }
     }
 }
@@ -66,13 +71,16 @@ pub struct Handler<T> {
 }
 
 impl<T> Handler<T>
-    where
+where
     T: for<'a> Persist<'a>,
     T: Clone,
 {
     pub fn new(path: &Path) -> Self {
         let current: T = Persist::load(path);
-        Self { current, path: path.into()}
+        Self {
+            current,
+            path: path.into(),
+        }
     }
 
     pub fn get(&self) -> T {

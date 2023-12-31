@@ -1,9 +1,9 @@
 use anyhow::Result;
 use embedded_hal::pwm::SetDutyCycle;
 use esp_idf_hal::delay::Ets;
-use rgb::{RGB8, RGB};
+use rgb::{RGB, RGB8};
+use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
-use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug, Copy, Serialize, Deserialize)]
 pub struct Pixel(RGB8);
@@ -24,12 +24,11 @@ impl DerefMut for Pixel {
 
 impl Into<Pixel> for RGB<f32> {
     fn into(self) -> Pixel {
-        Pixel(
-            RGB8 {
-                r: self.r as u8,
-                g: self.g as u8,
-                b: self.b as u8,
-            })
+        Pixel(RGB8 {
+            r: self.r as u8,
+            g: self.g as u8,
+            b: self.b as u8,
+        })
     }
 }
 
@@ -51,7 +50,6 @@ fn step(current: u8, other: u8, steps: u8) -> f32 {
     multiplier * (current.abs_diff(other) as f32) / steps as f32
 }
 
-
 impl<T: SetDutyCycle> Leds<T> {
     pub fn new(red: T, green: T, blue: T) -> Self {
         let current = RGB8::default();
@@ -68,9 +66,12 @@ impl<T: SetDutyCycle> Leds<T> {
     }
 
     pub fn flush(&mut self) -> Result<(), T::Error> {
-        self.red.set_duty_cycle_fraction(self.current.r.into(), 255)?;
-        self.green.set_duty_cycle_fraction(self.current.g.into(), 255)?;
-        self.blue.set_duty_cycle_fraction(self.current.b.into(), 255)?;
+        self.red
+            .set_duty_cycle_fraction(self.current.r.into(), 255)?;
+        self.green
+            .set_duty_cycle_fraction(self.current.g.into(), 255)?;
+        self.blue
+            .set_duty_cycle_fraction(self.current.b.into(), 255)?;
 
         Ok(())
     }
@@ -78,9 +79,9 @@ impl<T: SetDutyCycle> Leds<T> {
     pub fn fade(&mut self, target: Pixel) -> Result<(), T::Error> {
         let steps = 50;
         let increment: RGB<f32> = RGB {
-            r : step(self.current.r, target.r, steps),
-            g : step(self.current.g, target.g, steps),
-            b : step(self.current.b, target.b, steps),
+            r: step(self.current.r, target.r, steps),
+            g: step(self.current.g, target.g, steps),
+            b: step(self.current.b, target.b, steps),
         };
         let current: RGB<f32> = self.current.0.into();
 
@@ -101,11 +102,14 @@ impl<T: SetDutyCycle> Leds<T> {
     }
 
     pub fn on(&mut self) -> Result<(), T::Error> {
-        self.fade(RGB8 {
-            r: 255,
-            g: 255,
-            b: 255,
-        }.into())
+        self.fade(
+            RGB8 {
+                r: 255,
+                g: 255,
+                b: 255,
+            }
+            .into(),
+        )
     }
 
     pub fn flash(&mut self) -> Result<(), T::Error> {
