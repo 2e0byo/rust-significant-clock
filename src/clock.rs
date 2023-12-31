@@ -26,7 +26,7 @@ fn is_significant(time: DateTime<Local>) -> bool {
             .format("%H%M%S")
             .to_string()
             .chars()
-            .map(|c| c.try_into().unwrap())
+            .map(|c| c.try_into().expect("Unable to convert '{c}' to u8!"))
             .collect();
         let diffs: Vec<i8> = numbers
             .windows(2)
@@ -86,14 +86,14 @@ where
         )
         .unwrap(); // infallible
 
-    let _ = screen.flush(); // provide coercable error type.
+    screen.flush()?;
 
     Ok(())
 }
 
 pub unsafe fn set_timezone() {
     let tz = CString::new("TZ").expect("Unable to generate 'TZ' as string");
-    // let zone = CString::new("CET-1CEST,M3.5.0,M10.5.0/3").unwrap();
+    // let zone = CString::new("CET-1CEST,M3.5.0,M10.5.0/3").expect("Unable to generate timezone string");
     let zone =
         CString::new("GMT0BST,M3.5.0/1,M10.5.0").expect("Unable to generate timezone string");
     setenv(tz.as_ptr(), zone.as_ptr(), 1);
