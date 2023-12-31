@@ -5,6 +5,7 @@ use crossbeam_channel::Sender;
 use embedded_svc::wifi::{AccessPointConfiguration, Configuration};
 use esp_idf_hal::delay::Delay;
 use esp_idf_hal::modem::Modem;
+use esp_idf_hal::reset::restart;
 use esp_idf_svc::{
     eventloop::EspSystemEventLoop,
     nvs::EspDefaultNvsPartition,
@@ -113,12 +114,14 @@ impl Wifi {
 
 pub fn wifi_loop(mut wifi: Wifi, _rx: Receiver<Event>, tx: Sender<Event>) -> ! {
     if let Ok(()) = wifi.try_connect(10) {
-        tx.send(Event::NetworkConnected).unwrap()
-    };
-    // if let Ok(_) = wifi.try_connect(10) {
-    //     tx.send(Event::NetworkConnected)
-    // };
+        tx.send(Event::NetworkConnected)
+            .expect("TX channel disconnected!");
+    } else {
+        log::warn!("Unable to connect to wifi; rebooting system!");
+        restart();
+    }
     let delay = Delay::new_default();
+    // TODO handle change to ap here; update config to do so after n reboots.
     loop {
         delay.delay_ms(100);
     }
