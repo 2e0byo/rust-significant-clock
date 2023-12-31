@@ -91,6 +91,15 @@ where
     Ok(())
 }
 
+pub unsafe fn set_timezone() {
+    let tz = CString::new("TZ").expect("Unable to generate 'TZ' as string");
+    // let zone = CString::new("CET-1CEST,M3.5.0,M10.5.0/3").unwrap();
+    let zone =
+        CString::new("GMT0BST,M3.5.0/1,M10.5.0").expect("Unable to generate timezone string");
+    setenv(tz.as_ptr(), zone.as_ptr(), 1);
+    tzset();
+}
+
 pub fn screen_loop<T>(
     mut screen: Screen<T>,
     rx: Receiver<Event>,
@@ -100,14 +109,7 @@ pub fn screen_loop<T>(
 where
     T: Connector,
 {
-    // TODO move init somewhere else.
-    unsafe {
-        let tz = CString::new("TZ").unwrap();
-        // let zone = CString::new("CET-1CEST,M3.5.0,M10.5.0/3").unwrap();
-        let zone = CString::new("GMT0BST,M3.5.0/1,M10.5.0").unwrap();
-        setenv(tz.as_ptr(), zone.as_ptr(), 1);
-        tzset();
-    }
+    unsafe { set_timezone() };
     let delay = Delay::new_default();
     let mut config = config;
     loop {
