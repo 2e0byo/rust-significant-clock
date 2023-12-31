@@ -11,6 +11,7 @@ pub struct Segment {
     pub physical_posn: u8,
 }
 
+#[allow(dead_code)] // normal not used as it happens
 impl Segment {
     pub fn inverted(physical_posn: u8) -> Segment {
         Segment {
@@ -64,7 +65,7 @@ impl ScreenBuilder {
         }
     }
 
-    pub fn to_screen<T>(self, display: MAX7219<T>) -> Result<Screen<T>, DataError>
+    pub fn build<T>(self, display: MAX7219<T>) -> Result<Screen<T>, DataError>
     where
         T: Connector,
     {
@@ -101,15 +102,14 @@ where
     pub fn flush(&mut self) -> Result<(), DataError> {
         let updates = iter::zip(self.framebuffer.chunks(8), self.last_framebuffer.chunks(8))
             .enumerate()
-            .map(|(display, (new, old))| {
+            .flat_map(|(display, (new, old))| {
                 iter::zip(new, old)
                     .enumerate()
                     .filter_map(move |(row, (new, old))| match new == old {
                         true => None,
                         false => Some((display, row + 1, new)),
                     })
-            })
-            .flatten();
+            });
 
         for (display, row, new) in updates {
             self.display.write_raw_byte(display, row as u8, *new)?;

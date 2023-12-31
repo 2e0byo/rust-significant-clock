@@ -1,6 +1,6 @@
 use embedded_hal::digital::InputPin;
 use esp_idf_hal::delay::Delay;
-use num::CheckedAdd;
+
 use rgb::RGB8;
 
 use crossbeam_channel::Sender;

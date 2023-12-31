@@ -3,12 +3,6 @@ use embedded_hal::pwm::SetDutyCycle;
 
 use crate::{config::Config, event::Event, leds::Leds};
 
-enum States {
-    OFF,
-    FADING,
-    ON,
-}
-
 pub struct Lamp<T: SetDutyCycle> {
     leds: Leds<T>,
     config: Config,

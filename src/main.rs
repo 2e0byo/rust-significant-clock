@@ -43,7 +43,7 @@ fn main() -> Result<!> {
     // Bind the log crate to the ESP Logging facilities
     esp_idf_svc::log::EspLogger::initialize_default();
 
-    let config_handler = ConfigHandler::new(&Path::new("config.json"));
+    let config_handler = ConfigHandler::new(Path::new("config.json"));
     let config = config_handler.get();
 
     let peripherals = Peripherals::take()?;
@@ -72,7 +72,7 @@ fn main() -> Result<!> {
             row_length: 4,
         };
         let raw_display = MAX7219::from_pins(8, data, cs, clk).unwrap();
-        ScreenBuilder::new(config).to_screen(raw_display).unwrap()
+        ScreenBuilder::new(config).build(raw_display).unwrap()
     };
 
     let (msg_tx, msg_rx) = bounded::<Event>(8);

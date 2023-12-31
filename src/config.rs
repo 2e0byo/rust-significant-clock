@@ -8,7 +8,7 @@ use anyhow::Result;
 use rgb::RGB8;
 use serde::{Deserialize, Serialize};
 
-trait Persist<'a>
+pub trait Persist<'a>
 where
     Self: Default,
     Self: Serialize,
@@ -72,6 +72,7 @@ pub struct Handler<T> {
     path: Box<Path>,
 }
 
+#[allow(dead_code)] // TODO set not used
 impl<T> Handler<T>
 where
     T: for<'a> Persist<'a>,

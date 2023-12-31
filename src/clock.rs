@@ -86,7 +86,7 @@ where
         )
         .unwrap(); // infallible
 
-    screen.flush();
+    let _ = screen.flush(); // provide coercable error type.
 
     Ok(())
 }

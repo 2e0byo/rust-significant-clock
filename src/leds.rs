@@ -5,8 +5,6 @@ use rgb::{RGB, RGB8};
 use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 
-use num::{CheckedAdd, CheckedSub};
-
 #[derive(Clone, Debug, Copy, Serialize, Deserialize)]
 pub struct Pixel(RGB8);
 
@@ -24,34 +22,34 @@ impl DerefMut for Pixel {
     }
 }
 
-impl Into<Pixel> for RGB<f32> {
-    fn into(self) -> Pixel {
+impl From<RGB<f32>> for Pixel {
+    fn from(val: RGB<f32>) -> Self {
         Pixel(RGB8 {
-            r: self.r as u8,
-            g: self.g as u8,
-            b: self.b as u8,
+            r: val.r as u8,
+            g: val.g as u8,
+            b: val.b as u8,
         })
     }
 }
 
-impl Into<Pixel> for RGB8 {
-    fn into(self) -> Pixel {
-        Pixel(self)
+impl From<RGB8> for Pixel {
+    fn from(val: RGB8) -> Self {
+        Pixel(val)
     }
 }
 
 impl Pixel {
     pub fn safe_add(&mut self, other: Self) -> Self {
-        let r = self.r.checked_add(other.r).unwrap_or(255);
-        let g = self.r.checked_add(other.g).unwrap_or(255);
-        let b = self.r.checked_add(other.b).unwrap_or(255);
+        let r = self.r.saturating_add(other.r);
+        let g = self.r.saturating_add(other.g);
+        let b = self.r.saturating_add(other.b);
         RGB8 { r, g, b }.into()
     }
 
     pub fn safe_sub(&mut self, other: Self) -> Self {
-        let r = self.r.checked_sub(other.r).unwrap_or(0);
-        let g = self.r.checked_sub(other.g).unwrap_or(0);
-        let b = self.r.checked_sub(other.b).unwrap_or(0);
+        let r = self.r.saturating_sub(other.r);
+        let g = self.r.saturating_sub(other.g);
+        let b = self.r.saturating_sub(other.b);
         RGB8 { r, g, b }.into()
     }
 }

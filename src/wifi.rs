@@ -13,16 +13,12 @@ use esp_idf_svc::{
 
 use crate::event::Event;
 
+#[allow(dead_code)] // TODO ap not implemented.
 #[derive(Default)]
 pub struct WifiBuilder {
     wifi: Option<BlockingWifi<EspWifi<'static>>>,
     ap_config: AccessPointConfiguration,
     client_config: ClientConfiguration,
-}
-
-enum CurrentConfig {
-    Client(ClientConfiguration),
-    AccessPoint(AccessPointConfiguration),
 }
 
 impl WifiBuilder {
@@ -37,6 +33,7 @@ impl WifiBuilder {
         })
     }
 
+    #[allow(dead_code)]
     pub fn with_ap_config(self, ap_config: AccessPointConfiguration) -> WifiBuilder {
         WifiBuilder { ap_config, ..self }
     }
@@ -81,6 +78,7 @@ impl Wifi {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn as_ap(&mut self) -> Result<()> {
         self.wifi
             .set_configuration(&Configuration::AccessPoint(self.ap_config.clone()))?;

@@ -1,5 +1,6 @@
 use crate::config::Config;
 
+#[allow(dead_code)] // TODO working out what granularity to use.
 #[derive(Debug)]
 pub enum Event {
     // Network
