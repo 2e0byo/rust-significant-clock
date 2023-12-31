@@ -71,8 +71,10 @@ fn main() -> Result<!> {
             segments,
             row_length: 4,
         };
-        let raw_display = MAX7219::from_pins(8, data, cs, clk).unwrap();
-        ScreenBuilder::new(config).build(raw_display).unwrap()
+        let raw_display = MAX7219::from_pins(8, data, cs, clk)
+            .ok() // hack for non convertable error types.
+            .context("Failed to get display")?;
+        ScreenBuilder::new(config).build(raw_display)?
     };
 
     let (msg_tx, msg_rx) = bounded::<Event>(8);
