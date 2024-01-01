@@ -41,15 +41,15 @@ impl From<RGB8> for Pixel {
 impl Pixel {
     pub fn safe_add(&mut self, other: Self) -> Self {
         let r = self.r.saturating_add(other.r);
-        let g = self.r.saturating_add(other.g);
-        let b = self.r.saturating_add(other.b);
+        let g = self.g.saturating_add(other.g);
+        let b = self.b.saturating_add(other.b);
         RGB8 { r, g, b }.into()
     }
 
     pub fn safe_sub(&mut self, other: Self) -> Self {
         let r = self.r.saturating_sub(other.r);
-        let g = self.r.saturating_sub(other.g);
-        let b = self.r.saturating_sub(other.b);
+        let g = self.g.saturating_sub(other.g);
+        let b = self.b.saturating_sub(other.b);
         RGB8 { r, g, b }.into()
     }
 }
