@@ -153,8 +153,8 @@ fn main() -> Result<!> {
     });
 
     let _button_task = {
-        let right_button = PinDriver::input(peripherals.pins.gpio34.downgrade_input())?;
-        let left_button = PinDriver::input(peripherals.pins.gpio35.downgrade_input())?;
+        let left_button = PinDriver::input(peripherals.pins.gpio34.downgrade_input())?;
+        let right_button = PinDriver::input(peripherals.pins.gpio35.downgrade_input())?;
         let mut buttons = Buttons::new(left_button, right_button, config.clone());
         let tx = msg_tx.clone();
 
