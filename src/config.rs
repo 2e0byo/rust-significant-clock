@@ -3,8 +3,9 @@ use std::{
     path::Path,
 };
 
-use crate::leds::Pixel;
+use crate::{event::Event, leds::Pixel};
 use anyhow::Result;
+use crossbeam_channel::Receiver;
 use rgb::RGB8;
 use serde::{Deserialize, Serialize};
 
@@ -99,3 +100,11 @@ where
 }
 
 pub type ConfigHandler = Handler<Config>;
+
+pub fn config_loop(rx: Receiver<Event>, handler: &mut ConfigHandler) {
+    loop {
+        if let Ok(Event::ChangeConfig(config)) = rx.recv() {
+            handler.set(config)
+        };
+    }
+}

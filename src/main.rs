@@ -28,6 +28,7 @@ mod wifi;
 use crate::{
     buttons::Buttons,
     clock::screen_loop,
+    config::config_loop,
     screen::{ScreenBuilder, ScreenConfig, Segment},
 };
 use crate::{config::ConfigHandler, lamp::Lamp, wifi::*};
@@ -43,7 +44,7 @@ fn main() -> Result<!> {
     // Bind the log crate to the ESP Logging facilities
     esp_idf_svc::log::EspLogger::initialize_default();
 
-    let config_handler = ConfigHandler::new(Path::new("config.json"));
+    let mut config_handler = ConfigHandler::new(Path::new("config.json"));
     let config = config_handler.get();
 
     let peripherals = Peripherals::take()?;
@@ -78,6 +79,13 @@ fn main() -> Result<!> {
     };
 
     let (msg_tx, msg_rx) = bounded::<Event>(8);
+
+    let _config_task = {
+        let rx = msg_rx.clone();
+        thread::Builder::new()
+            .stack_size(4096)
+            .spawn(move || config_loop(rx, &mut config_handler))
+    };
 
     let _screen_task = {
         let rx = msg_rx.clone();
