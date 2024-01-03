@@ -53,18 +53,23 @@ impl<T: InputPin> Buttons<T> {
         }
         .into();
         loop {
-            if let Ok(true) = self.left_button.is_high() {
-                while let Ok(true) = self.left_button.is_high() {
+            if let Ok(true) = self.right_button.is_high() {
+                log::info!("Right button pressed");
+                while let Ok(true) = self.right_button.is_high() {
                     delay.delay_ms(1);
                 }
+                log::info!("Right button released");
                 self.config.lamp_brightness = self.config.lamp_brightness.safe_add(step);
+                log::info!("Config updated");
                 // FIXME why do we need to send all events twice?  Maybe log response here.
-                let _ = tx.send(Event::ChangeConfig(self.config.clone()));
-                let _ = tx.send(Event::ChangeConfig(self.config.clone()));
+                let r = tx.send(Event::ChangeConfig(self.config.clone()));
+                log::info!("Sent! {r:?}");
+                let r = tx.send(Event::ChangeConfig(self.config.clone()));
+                log::info!("Sent! {r:?}");
             }
 
-            if let Ok(true) = self.right_button.is_high() {
-                while let Ok(true) = self.right_button.is_high() {
+            if let Ok(true) = self.left_button.is_high() {
+                while let Ok(true) = self.left_button.is_high() {
                     delay.delay_ms(1);
                 }
                 self.config.lamp_brightness = self.config.lamp_brightness.safe_sub(step);

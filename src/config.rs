@@ -48,7 +48,7 @@ impl Default for Config {
                 b: 25,
             }
             .into(),
-            significant_mode: false,
+            significant_mode: true,
         }
     }
 }

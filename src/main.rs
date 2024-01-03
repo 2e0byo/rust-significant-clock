@@ -165,7 +165,7 @@ fn main() -> Result<!> {
 
     // Send startup messages
     let _ = msg_tx.send(Event::ChangeBrightness(0));
-    let _ = msg_tx.send(Event::ChangeBrightness(5));
+    let _ = msg_tx.send(Event::ChangeBrightness(1));
 
     log::info!("Booted");
     loop {
